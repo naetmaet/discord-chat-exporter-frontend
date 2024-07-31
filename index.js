@@ -9,7 +9,6 @@ const nextButton = document.getElementById('next-button');
 const pageInput = document.getElementById('page-input');
 const pageCountElement = document.getElementById('page-count');
 const searchInput = document.getElementById('search-input');
-let caca=[]
 
 let messages = [];
 let messagesObj={}
@@ -63,7 +62,7 @@ searchInput.addEventListener('input', () => {
     }
   });
 
-  let filteredMessages = messages;
+  filteredMessages = messages;
   if (searchTerm) {
     let regex;
     try {
