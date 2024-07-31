@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Discord-like Chat</title>
+  <link rel="stylesheet" href="styles.css">
+  <input type="file" id="file-input" accept=".json">
+</head>
+<body>
+  <div class="search-bar">
+    <input type="search" id="search-input" class="search-input" placeholder="Use regex.">
+  </div>
+  <div class="channel-header">
+    <img src="" alt="" class="channel-icon">
+    <span class="channel-name"></span>
+  </div>
+  <div class="message-container" id="markdown-content"></div>
+  <div class="pagination">
+    <button class="pagination-button" id="prev-button">Prev</button>
+    <button class="pagination-button" id="next-button">Next</button>
+    <input type="number" style="height:15px;" id="page-input" class="pagination-input" value="1">
+    <span id="page-count"></span>
+  </div>
+  
+  <script src="https://cdn.plyr.io/3.6.12/plyr.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="index.js"></script>
+</body>
+</html>
