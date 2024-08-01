@@ -7,7 +7,8 @@
 }
 
 div:not([class^="embed"]) {
-  width: 1000px;
+  max-width:1000px;
+  width: auto;
   margin: 0 auto;
   overflow-x: hidden;
 }
