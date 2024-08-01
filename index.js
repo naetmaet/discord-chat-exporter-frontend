@@ -247,7 +247,7 @@ function renderEmbeds(embeds) {
     
     if (embed.video) {
       let isDiscordVideo = ["cdn.discordpp.com", "media.discordapp.net", ".mp4", ".webm", ".mov"].some((check) => embed.video.url.includes(check));
-      html += isDiscordVideo ? `<video src="${embed.video.url}" alt="${embed.title}" class="embed-video" controls></video>` : `<iframe sandbox="allow-same-origin allow-scripts block-tracking" src="${embed.video.url}" frameborder="0" allowfullscreen width="100%" height="100%"></iframe>`;
+      html += isDiscordVideo ? `<video src="${embed.video.url}" alt="${embed.title}" class="embed-video" controls></video>` : `<iframe sandbox="allow-same-origin allow-scripts" src="${embed.video.url}" frameborder="0" allowfullscreen width="100%" height="100%"></iframe>`;
         } else if (embed.image) {
       html += `<img src="${embed.image.url}" alt="${embed.title}" class="embed-image">`;
     }
