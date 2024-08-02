@@ -15,11 +15,17 @@ there are currently 9 flags that you can use to narrow down results here's a lis
 * -embeds
 * -media
 * -nomedia
+* -noembeds
 * -mentions
 * -videos
 * -images
 * -stickers
+* -conversations (loads pages as conversations that are calculated by the time they were sent compared to each other)
 
+## searching flags
+
+currently there's only mentions: and from:
+you can use quotes for spaces and it also supports regex and ids
 you can escape the flags like this \-images to search for literally "-images"
 
 searching is done with regex and is case insensitive 
