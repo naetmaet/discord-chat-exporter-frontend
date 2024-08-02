@@ -60,7 +60,7 @@ const currentUrl = new URL(window.location.href);
 const archiveUrl = currentUrl.searchParams.get("archive");
 
 if (archiveUrl) {
-  fetch(archiveUrl)
+  fetch(archiveUrl,{mode:"no-cors"})
     .then((response) => response.json())
     .then((jsonData) => {
       messages = jsonData.messages;
@@ -108,7 +108,7 @@ if (archiveUrl) {
   loadButton.addEventListener("click", () => {
     const url = urlInput.value.trim();
     if (url) {
-      fetch(url)
+      fetch(url,{mode:"no-cors"})
         .then((response) => response.json())
         .then((jsonData) => {
           messages = jsonData.messages;
