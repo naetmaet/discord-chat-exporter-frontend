@@ -172,7 +172,7 @@ searchInput.addEventListener("input", () => {
   let searchTerm = searchInput.value.trim();
   modifiers = {};
   modifierValues = {};
-  pageNumber = 1;
+  currentPage = 1;
   let savedTerm = searchTerm;
 
   Object.keys(searchModifiers).forEach((modifier) => {
@@ -475,8 +475,6 @@ searchInput.addEventListener("input", () => {
       messagesToFilter = acc;
     }
   }
-
-  pageNumber = 1;
   filteredMessages = messagesToFilter;
   renderMessagesChunk(filteredMessages);
   updatePagination(filteredMessages.length);
@@ -642,7 +640,7 @@ function renderAttachments(attachments) {
         attachment.fileName.endsWith(".png") ||
         attachment.fileName.endsWith(".gif")
       ) {
-        html += `<img src="${attachment.url}" alt="${attachment.fileName}" style="max-width: 300px; height: 200px;">`;
+        html += `<img src="${attachment.url}" alt="${attachment.fileName}" style="max-width: 50%; height: 50%;">`;
       } else if (
         attachment.fileName.endsWith(".mp4") ||
         attachment.fileName.endsWith(".webm") ||
