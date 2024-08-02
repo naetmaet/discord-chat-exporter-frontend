@@ -640,7 +640,7 @@ function renderAttachments(attachments) {
         attachment.fileName.endsWith(".png") ||
         attachment.fileName.endsWith(".gif")
       ) {
-        html += `<img src="${attachment.url}" alt="${attachment.fileName}" style="max-width: 50%; height: 100%;">`;
+        html += `<img src="${attachment.url}" alt="${attachment.fileName}" style="max-width: 50%; max-height: 100%;">`;
       } else if (
         attachment.fileName.endsWith(".mp4") ||
         attachment.fileName.endsWith(".webm") ||
