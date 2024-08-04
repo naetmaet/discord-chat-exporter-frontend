@@ -664,7 +664,7 @@ function renderAttachments(attachments) {
 let currentlyHighlightedMessage
 
 function jumpToMessage(messageId) {
-  modifiers.hasConversations=false
+  modifiers.hasConversations = false;
   if (currentlyHighlightedMessage) {
     currentlyHighlightedMessage.classList.remove('highlighted');
     currentlyHighlightedMessage.style.backgroundColor = ''; 
@@ -673,20 +673,22 @@ function jumpToMessage(messageId) {
   const message = messagesObj[messageId];
 
   if (message) {
-    const pageIndex = Math.floor((1+message.context) / chunkSize);
+    const pageIndex = Math.floor((1 + message.context) / chunkSize);
     currentPage = pageIndex + 1;
     filteredMessages = messages;
     updatePagination();
     renderMessagesChunk(messages)
 
-    const messageElement = document.getElementById(`message-id-${messageId}`);
-    messageElement.classList.add('highlighted');
-    messageElement.style.backgroundColor = '#444037';
-    currentlyHighlightedMessage = messageElement;
-    messageElement.scrollIntoView()
-    setTimeout(() => {
-      messageElement.style.backgroundColor=""
-    }, 3000);
+    const messageElement = document.querySelector(`[id="message-id-${messageId}"]`);
+    if (messageElement) {
+      messageElement.classList.add('highlighted');
+      messageElement.style.backgroundColor = '#444037';
+      currentlyHighlightedMessage = messageElement;
+      messageElement.scrollIntoView()
+      setTimeout(() => {
+        messageElement.style.backgroundColor = ""
+      }, 3000);
+    }
   }
 }
 
