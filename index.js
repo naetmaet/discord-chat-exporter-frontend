@@ -69,21 +69,23 @@ if (archiveUrl) {
       filteredMessages = [];
       let lastMessage;
       let convo = 0;
+
       messages.forEach((msg, n) => {
         messagesObj[msg.id] = msg;
+        messagesObj[msg.id].context=n
         if (n) {
-          let lastMessageTime = new Date(lastMessage.timestamp).getTime();
+          let lastMessageTime = new Date(lastmessage.timestamp).getTime();
           let messageTime = new Date(msg.timestamp).getTime();
-          if (lastMessageTime + 2000000 > messageTime || msg.type === "Reply") {
-            conversations[convo].push(msg);
+         if (lastMessageTime + 2000000 > messageTime || msg.type === "Reply") {
+           conversations[convo].push(msg);
           } else {
-            convo++;
-            conversations[convo] = [msg];
+           convo++;
+           conversations[convo] = [msg];
           }
         } else {
           conversations[0] = [msg];
         }
-        lastMessage = msg;
+        lastmessage = msg;
       });
       filteredMessages = messages;
       document
@@ -117,24 +119,22 @@ if (archiveUrl) {
           filteredMessages = [];
           let lastMessage;
           let convo = 0;
-          messages.forEach((msg, n) => {
-            messagesObj[msg.id] = msg;
-            if (n) {
-              let lastMessageTime = new Date(lastMessage.timestamp).getTime();
-              let messageTime = new Date(msg.timestamp).getTime();
-              if (
-                lastMessageTime + 2000000 > messageTime ||
-                msg.type === "Reply"
-              ) {
-                conversations[convo].push(msg);
-              } else {
-                convo++;
-                conversations[convo] = [msg];
-              }
-            } else {
-              conversations[0] = [msg];
-            }
-            lastMessage = msg;
+        messages.forEach((msg, n) => {
+          messagesObj[msg.id] = msg;
+          messagesObj[msg.id].context=n
+          if (n) {
+            let lastMessageTime = new Date(lastmessage.timestamp).getTime();
+            let messageTime = new Date(msg.timestamp).getTime();
+          if (lastMessageTime + 2000000 > messageTime || msg.type === "Reply") {
+            conversations[convo].push(msg);
+          } else {
+            convo++;
+            conversations[convo] = [msg];
+          }
+          } else {
+            conversations[0] = [msg];
+          }
+            lastmessage = msg;
           });
           filteredMessages = messages;
 
