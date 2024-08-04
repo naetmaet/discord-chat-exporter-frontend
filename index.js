@@ -15,7 +15,6 @@ const urlInput = document.getElementById("url-input");
 
 let messages = [];
 let messagesObj = {};
-let conversation = {};
 let chunkSize = 50;
 let currentPage = 1;
 let totalPages = 1;
@@ -34,6 +33,7 @@ fileInput.addEventListener("change", (e) => {
     let convo = 0;
     messages.forEach((msg, n) => {
       messagesObj[msg.id] = msg;
+      messagesObj[msg.id].context=n
       if (n) {
         let lastMessageTime = new Date(lastmessage.timestamp).getTime();
         let messageTime = new Date(msg.timestamp).getTime();
@@ -220,7 +220,6 @@ searchInput.addEventListener("input", () => {
   const filterFunctions = {
     //WIP
   };
-
   Object.keys(modifiers).forEach((key) => {
     if (modifiers[key]) {
       switch (key) {
@@ -521,9 +520,9 @@ function renderMessages(messages) {
         }
       }
       return `
-        <div class="message">
+        <div class="message" id="message-id-${message.id}">
         <img src="${message.author.avatarUrl}" alt="" class="avatar">
-        <div class="message-content">
+        <div class="message-content"><a href="javascript:jumpToMessage('${message.id}')" style="color:grey;text-decoration:none;">jump to message</a><br>
         ${replyHTML}
         <span class="author" style = "color:${
           message.author.color || "#FFFFFF"
@@ -662,6 +661,35 @@ function renderAttachments(attachments) {
     .join("");
 }
 
+let currentlyHighlightedMessage
+
+function jumpToMessage(messageId) {
+  modifiers.hasConversations=false
+  if (currentlyHighlightedMessage) {
+    currentlyHighlightedMessage.classList.remove('highlighted');
+    currentlyHighlightedMessage.style.backgroundColor = ''; 
+  }
+
+  const message = messagesObj[messageId];
+
+  if (message) {
+    const pageIndex = Math.floor((1+message.context) / chunkSize);
+    currentPage = pageIndex + 1;
+    filteredMessages = messages;
+    updatePagination();
+    renderMessagesChunk(messages)
+
+    const messageElement = document.getElementById(`message-id-${messageId}`);
+    messageElement.classList.add('highlighted');
+    messageElement.style.backgroundColor = '#444037';
+    currentlyHighlightedMessage = messageElement;
+    messageElement.scrollIntoView()
+    setTimeout(() => {
+      messageElement.style.backgroundColor=""
+    }, 3000);
+  }
+}
+
 function renderEmbeds(embeds) {
   return embeds
     .map((embed) => {
@@ -736,11 +764,10 @@ function updatePagination(totalMessages = messages.length) {
   let chunksize = chunkSize;
   totalPages = 0;
   let msgs = 0;
-  let conv = filteredMessages;
   if (modifiers.hasConversations) {
-    for (let x = 0; x < conv.length; ++x) {
+    for (let x = 0; x < filteredMessages.length; ++x) {
       totalPages++;
-      msgs += conv?.[x]?.length;
+      msgs += filteredMessages?.[x]?.length;
     }
   } else {
     totalPages = Math.ceil(totalMessages / chunksize);
