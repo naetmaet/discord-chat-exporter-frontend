@@ -33,7 +33,7 @@ fileInput.addEventListener("change", (e) => {
     let convo = 0;
     messages.forEach((msg, n) => {
       messagesObj[msg.id] = msg;
-      messagesObj[msg.id].context=n
+      messagesObj[msg.id].context = n;
       if (n) {
         let lastMessageTime = new Date(lastmessage.timestamp).getTime();
         let messageTime = new Date(msg.timestamp).getTime();
@@ -60,6 +60,10 @@ const currentUrl = new URL(window.location.href);
 const archiveUrl = currentUrl.searchParams.get("archive");
 
 if (archiveUrl) {
+    setTimeout(() => {
+      alert("the archive will be downloaded please wait")
+    },20);
+
   fetch(archiveUrl)
     .then((response) => response.json())
     .then((jsonData) => {
@@ -72,15 +76,15 @@ if (archiveUrl) {
 
       messages.forEach((msg, n) => {
         messagesObj[msg.id] = msg;
-        messagesObj[msg.id].context=n
+        messagesObj[msg.id].context = n;
         if (n) {
           let lastMessageTime = new Date(lastmessage.timestamp).getTime();
           let messageTime = new Date(msg.timestamp).getTime();
-         if (lastMessageTime + 2000000 > messageTime || msg.type === "Reply") {
-           conversations[convo].push(msg);
+          if (lastMessageTime + 2000000 > messageTime || msg.type === "Reply") {
+            conversations[convo].push(msg);
           } else {
-           convo++;
-           conversations[convo] = [msg];
+            convo++;
+            conversations[convo] = [msg];
           }
         } else {
           conversations[0] = [msg];
@@ -119,21 +123,24 @@ if (archiveUrl) {
           filteredMessages = [];
           let lastMessage;
           let convo = 0;
-        messages.forEach((msg, n) => {
-          messagesObj[msg.id] = msg;
-          messagesObj[msg.id].context=n
-          if (n) {
-            let lastMessageTime = new Date(lastmessage.timestamp).getTime();
-            let messageTime = new Date(msg.timestamp).getTime();
-          if (lastMessageTime + 2000000 > messageTime || msg.type === "Reply") {
-            conversations[convo].push(msg);
-          } else {
-            convo++;
-            conversations[convo] = [msg];
-          }
-          } else {
-            conversations[0] = [msg];
-          }
+          messages.forEach((msg, n) => {
+            messagesObj[msg.id] = msg;
+            messagesObj[msg.id].context = n;
+            if (n) {
+              let lastMessageTime = new Date(lastmessage.timestamp).getTime();
+              let messageTime = new Date(msg.timestamp).getTime();
+              if (
+                lastMessageTime + 2000000 > messageTime ||
+                msg.type === "Reply"
+              ) {
+                conversations[convo].push(msg);
+              } else {
+                convo++;
+                conversations[convo] = [msg];
+              }
+            } else {
+              conversations[0] = [msg];
+            }
             lastmessage = msg;
           });
           filteredMessages = messages;
@@ -146,6 +153,7 @@ if (archiveUrl) {
     }
   });
 }
+
 let searchModifiers = {
   "-images": "hasImages",
   "-videos": "hasVideos",
@@ -158,7 +166,6 @@ let searchModifiers = {
   "-edits": "hasEdits",
   "-conversations": "hasConversations",
   "from:": "fromUser",
-  "-nomedia": "noMedia",
   "-mentions": "hasMentions",
   "mentions:": "mentionsUser",
   "-noembeds": "noEmbeds",
@@ -173,20 +180,21 @@ searchInput.addEventListener("input", () => {
   modifiers = {};
   modifierValues = {};
   currentPage = 1;
-  let savedTerm = searchTerm;
 
   Object.keys(searchModifiers).forEach((modifier) => {
     const regex = new RegExp(modifier, "i");
     if (searchTerm.match(regex)) {
-      if (modifier.startsWith("-"))
+      if (modifier.startsWith("-")) {
         searchTerm = searchTerm.replace(regex, "").trim();
+      }
 
       modifiers[searchModifiers[modifier]] = true;
       if (modifier.startsWith("from:") || modifier.startsWith("mentions:")) {
-        modifierValues[searchModifiers[modifier]] = searchTerm;
-        searchTerm = searchTerm
-          .replace(new RegExp(/(from|mentions):\s?("(.+)"|\S+)/gi), "")
-          .trim();
+        const userMatch = searchTerm.match(new RegExp(`${modifier}\\s*("(.+?)"|([^\\s]+))`));
+        if (userMatch) {
+          modifierValues[searchModifiers[modifier]] = userMatch[2] || userMatch[3];
+          searchTerm = searchTerm.replace(userMatch[0], "").trim();
+        }
       }
     }
   });
@@ -199,6 +207,7 @@ searchInput.addEventListener("input", () => {
 
   let messagesToFilter = modifiers.hasConversations ? conversations : messages;
   filteredMessages = messagesToFilter;
+
   if (searchTerm) {
     let regex;
     try {
@@ -206,11 +215,7 @@ searchInput.addEventListener("input", () => {
         searchTerm.startsWith("/") && searchTerm.endsWith("/")
           ? new RegExp(searchTerm.slice(1, -1), "gi")
           : new RegExp(searchTerm, "gi");
-      messagesToFilter = modifiers.hasConversations
-        ? messagesToFilter.map((conversation) =>
-            conversation.filter((message) => regex.test(message.content))
-          )
-        : messagesToFilter.filter((message) => regex.test(message.content));
+      messagesToFilter = filterMessages(messagesToFilter, regex);
     } catch (e) {
       console.error(`Invalid regex pattern: ${searchTerm}`);
       messagesToFilter = [];
@@ -218,267 +223,100 @@ searchInput.addEventListener("input", () => {
   }
 
   const filterFunctions = {
-    //WIP
+    hasEmbeds: (message) => message.embeds.length > 0,
+    noEmbeds: (message) => !message.embeds.length,
+    hasMedia: (message) => message.attachments.length > 0,
+    hasNoMedia: (message) => !message.attachments.length,
+    hasEdits: (message) => message.timestampEdited,
+    hasMentions: (message) => message.reference?.messageId,
+    hasStickers: (message) => message.stickers.length > 0,
+    hasImages: (message) => message.attachments?.some((attachment) =>
+      /\.(jpg|jpeg|png|gif)$/i.test(attachment.fileName)
+    ),
+    hasVideos: (message) => message.attachments?.some((attachment) =>
+      /\.(mp4|webm|mov)$/i.test(attachment.fileName)
+    ),
+    mentionsUser: (message, user) => {
+      const referencedMessage = messagesObj[message.reference?.messageId];
+      return referencedMessage && (
+        new RegExp(user, "i").test(referencedMessage.author.name) ||
+        referencedMessage.author.id === user
+      );
+    },
+    fromUser: (message, user) => {
+      return new RegExp(user, "i").test(message.author.name) || message.author?.id === user;
+    }
   };
+
   Object.keys(modifiers).forEach((key) => {
     if (modifiers[key]) {
-      switch (key) {
-        case "hasEmbeds":
-          if (modifiers.hasConversations) {
-            messagesToFilter = messagesToFilter
-              .map((conversation) => {
-                return conversation.filter((message) => message.embeds.length);
-              })
-              .filter((conversation) => conversation.length);
-          } else {
-            messagesToFilter = messagesToFilter.filter(
-              (message) => message.embeds.length
-            );
-          }
-          break;
-
-        case "noEmbeds":
-          if (modifiers.hasConversations) {
-            messagesToFilter = messagesToFilter
-              .map((conversation) => {
-                return conversation.filter((message) => !message.embeds.length);
-              })
-              .filter((conversation) => !conversation.length);
-          } else {
-            messagesToFilter = messagesToFilter.filter(
-              (message) => !message.embeds.length
-            );
-          }
-          break;
-        case "hasMedia":
-          if (modifiers.hasConversations) {
-            messagesToFilter = messagesToFilter
-              .map((conversation) => {
-                return conversation.filter(
-                  (message) => message.attachments.length
-                );
-              })
-              .filter((conversation) => conversation.length);
-          } else {
-            messagesToFilter = messagesToFilter.filter(
-              (message) => message.attachments.length
-            );
-          }
-          break;
-
-        case "hasEdits":
-          if (modifiers.hasConversations) {
-            messagesToFilter = messagesToFilter
-              .map((conversation) => {
-                return conversation.filter(
-                  (message) => message.timestampEdited
-                );
-              })
-              .filter((conversation) => conversation.length);
-          } else {
-            messagesToFilter = messagesToFilter.filter(
-              (message) => message.timestampEdited
-            );
-          }
-          break;
-
-        case "hasMentions":
-          if (modifiers.hasConversations) {
-            messagesToFilter = messagesToFilter
-              .map((conversation) => {
-                return conversation.filter(
-                  (message) => message.reference?.messageId
-                );
-              })
-              .filter((conversation) => conversation.length);
-          } else {
-            messagesToFilter = messagesToFilter.filter(
-              (message) => message.reference?.messageId
-            );
-          }
-          break;
-
-        case "hasEdits":
-          if (modifiers.hasConversations) {
-            messagesToFilter = messagesToFilter
-              .map((conversation) => {
-                return conversation.filter(
-                  (message) => message.timestampEdited
-                );
-              })
-              .filter((conversation) => conversation.length);
-          } else {
-            messagesToFilter = messagesToFilter.filter(
-              (message) => message.timestampEdited
-            );
-          }
-          break;
-
-        case "hasStickers":
-          if (modifiers.hasConversations) {
-            messagesToFilter = messagesToFilter
-              .map((conversation) => {
-                return conversation.filter(
-                  (message) => message.stickers.length
-                );
-              })
-              .filter((conversation) => conversation.length);
-          } else {
-            messagesToFilter = messagesToFilter.filter(
-              (message) => message.stickers.length
-            );
-          }
-          break;
-
-        case "hasImages":
-          if (modifiers.hasConversations) {
-            messagesToFilter = messagesToFilter
-              .map((conversation) => {
-                return conversation.filter((message) =>
-                  message.attachments.some(
-                    (attachment) =>
-                      attachment.fileName.endsWith(".jpg") ||
-                      attachment.fileName.endsWith(".jpeg") ||
-                      attachment.fileName.endsWith(".png") ||
-                      attachment.fileName.endsWith(".gif")
-                  )
-                );
-              })
-              .filter((conversation) => conversation.length > 0);
-          } else {
-            messagesToFilter = messagesToFilter.filter((message) =>
-              message.attachments?.some(
-                (attachment) =>
-                  attachment.fileName.endsWith(".jpg") ||
-                  attachment.fileName.endsWith(".jpeg") ||
-                  attachment.fileName.endsWith(".png") ||
-                  attachment.fileName.endsWith(".gif")
-              )
-            );
-          }
-          break;
-        case "hasVideos":
-          if (modifiers.hasConversations) {
-            messagesToFilter = messagesToFilter.map((conversation) => {
-              return conversation.filter((message) =>
-                message.attachments.some(
-                  (attachment) =>
-                    attachment.fileName.endsWith(".mp4") ||
-                    attachment.fileName.endsWith(".webm") ||
-                    attachment.fileName.endsWith(".mov")
-                )
-              );
-            });
-          } else {
-            messagesToFilter = messagesToFilter.filter((message) =>
-              message.attachments.some(
-                (attachment) =>
-                  attachment.fileName.endsWith(".mp4") ||
-                  attachment.fileName.endsWith(".webm") ||
-                  attachment.fileName.endsWith(".mov")
-              )
-            );
-          }
-          break;
-        case "fromUser":
-          if (modifiers.hasConversations) {
-            messagesToFilter = messagesToFilter.map((conversation) => {
-              let regex = new RegExp(/from:\s?("(.+)"|\S+)/i);
-              let user = savedTerm.match(regex);
-              user = user[2] || user[1];
-              return conversation.filter(
-                (message) =>
-                  new RegExp(user, "i").test(message.author.name) ||
-                  message.author?.id === user
-              );
-            });
-          } else {
-            let regex = new RegExp(/from:\s?("(.+)"|\S+)/i);
-            let user = savedTerm.match(regex);
-            user = user[2] || user[1];
-
-            messagesToFilter = messagesToFilter.filter(
-              (message) =>
-                new RegExp(user, "i").test(message.author.name) ||
-                message.author?.id === user
-            );
-          }
-          break;
-        case "mentionsUser":
-          console.log("works?");
-          if (modifiers.hasConversations) {
-            messagesToFilter = messagesToFilter.map((conversation) => {
-              let regex = new RegExp(/mentions:\s?("(.+)"|\S+)/i);
-              let user = savedTerm.match(regex);
-
-              user = user[2] || user[1];
-
-              return conversation.filter(
-                (message) =>
-                  RegExp(user, "i").test(
-                    messagesObj[message.reference?.messageId]?.author.name
-                  ) ||
-                  messagesObj[message.reference?.messageId]?.author.id === user
-              );
-            });
-          } else {
-            console.log("o");
-            let regex = new RegExp(/mentions:\s?("(.+)"|\S+)/i);
-            let user = savedTerm.match(regex);
-            user = user[2] || user[1];
-            console.log(user);
-            messagesToFilter = messagesToFilter.filter(
-              (message) =>
-                RegExp(user, "i").test(
-                  messagesObj[message.reference?.messageId]?.author.name
-                ) || message.reference?.messageId === user
-            );
-          }
-          break;
-        default:
-          break;
-      }
-      if (modifiers.hasConversations) {
-        messagesToFilter = messagesToFilter.filter((a) => a.length);
+      const filterFunction = filterFunctions[key];
+      if (filterFunction) {
+        messagesToFilter = applyFilter(messagesToFilter, key, filterFunction);
       }
     }
   });
 
   if (modifiers.hasReplies || modifiers.hasReply) {
-    if (modifiers.hasConversations) {
-      messagesToFilter = messagesToFilter.map((conversation) => {
-        let acc = [];
-        conversation.forEach((message, n) => {
-          if (
-            !modifiers.hasReply &&
-            messagesObj[message.reference?.messageId]
-          ) {
-            acc.push(messagesObj[message.reference.messageId]);
-          }
-          if (message.type === "Reply") {
-            acc.push(message);
-          }
-        });
-        return acc;
+    messagesToFilter = filterReplies(messagesToFilter, modifiers.hasReply);
+  }
+
+  filteredMessages = messagesToFilter;
+  renderMessagesChunk(filteredMessages);
+  updatePagination(filteredMessages.length);
+});
+
+function filterMessages(messagesToFilter, regex) {
+  return modifiers.hasConversations
+    ? messagesToFilter.map((conversation) =>
+        conversation.filter((message) => regex.test(message.content))
+      )
+    : messagesToFilter.filter((message) => regex.test(message.content));
+}
+
+function applyFilter(messagesToFilter, key, filterFunction) {
+  if (modifiers.hasConversations) {
+    return messagesToFilter.map((conversation) => {
+      const user = modifierValues.fromUser || modifierValues.mentionsUser;
+      return conversation.filter((message) => {
+        return user ? filterFunction(message, user) : filterFunction(message);
       });
-    } else {
+    }).filter((conversation) => conversation.length);
+  } else {
+    const user = modifierValues.fromUser || modifierValues.mentionsUser;
+    return messagesToFilter.filter((message) => {
+      return user ? filterFunction(message, user) : filterFunction(message);
+    });
+  }
+}
+
+function filterReplies(messagesToFilter, hasReply) {
+  if (modifiers.hasConversations) {
+    return messagesToFilter.map((conversation) => {
       let acc = [];
-      messagesToFilter = messagesToFilter.forEach((message) => {
-        if (!modifiers.hasReply && messagesObj[message.reference?.messageId]) {
+      conversation.forEach((message) => {
+        if (!hasReply && messagesObj[message.reference?.messageId]) {
           acc.push(messagesObj[message.reference.messageId]);
         }
         if (message.type === "Reply") {
           acc.push(message);
         }
       });
-      messagesToFilter = acc;
-    }
+      return acc;
+    });
+  } else {
+    let acc = [];
+    messagesToFilter.forEach((message) => {
+      if (!hasReply && messagesObj[message.reference?.messageId]) {
+        acc.push(messagesObj[message.reference.messageId]);
+      }
+      if (message.type === "Reply") {
+        acc.push(message);
+      }
+    });
+    return acc;
   }
-  filteredMessages = messagesToFilter;
-  renderMessagesChunk(filteredMessages);
-  updatePagination(filteredMessages.length);
-});
-
+}
 function renderChannelHeader(jsonData) {
   channelIcon.src = jsonData.guild.iconUrl;
   channelName.textContent = `${jsonData.guild.name} #${jsonData.channel.name}`;
@@ -506,6 +344,7 @@ function textToHtml(text) {
     .replace(/'/g, "&#039;");
 }
 function renderMessages(messages) {
+  if (!messages.length)(console.log("nothing to show here"))
   let messageHTML = messages
     .map((message) => {
       let replyHTML = "";
@@ -522,7 +361,9 @@ function renderMessages(messages) {
       return `
         <div class="message" id="message-id-${message.id}">
         <img src="${message.author.avatarUrl}" alt="" class="avatar">
-        <div class="message-content"><a href="javascript:jumpToMessage('${message.id}')" style="color:grey;text-decoration:none;">jump to message</a><br>
+        <div class="message-content"><a href="javascript:jumpToMessage('${
+          message.id
+        }')" style="color:grey;text-decoration:none;">jump to message</a><br>
         ${replyHTML}
         <span class="author" style = "color:${
           message.author.color || "#FFFFFF"
@@ -661,32 +502,34 @@ function renderAttachments(attachments) {
     .join("");
 }
 
-let currentlyHighlightedMessage
+let currentlyHighlightedMessage;
 
 function jumpToMessage(messageId) {
   modifiers.hasConversations = false;
   if (currentlyHighlightedMessage) {
-    currentlyHighlightedMessage.classList.remove('highlighted');
-    currentlyHighlightedMessage.style.backgroundColor = ''; 
+    currentlyHighlightedMessage.classList.remove("highlighted");
+    currentlyHighlightedMessage.style.backgroundColor = "";
   }
 
   const message = messagesObj[messageId];
 
   if (message) {
-    const pageIndex = Math.floor((1 + message.context) / chunkSize);
+    let pageIndex = Math.ceil((message.context + 1) / chunkSize) - 1;
     currentPage = pageIndex + 1;
     filteredMessages = messages;
     updatePagination();
-    renderMessagesChunk(messages)
+    renderMessagesChunk(messages);
 
-    const messageElement = document.querySelector(`[id="message-id-${messageId}"]`);
+    const messageElement = document.querySelector(
+      `[id="message-id-${messageId}"]`
+    );
     if (messageElement) {
-      messageElement.classList.add('highlighted');
-      messageElement.style.backgroundColor = '#444037';
+      messageElement.classList.add("highlighted");
+      messageElement.style.backgroundColor = "#444037";
       currentlyHighlightedMessage = messageElement;
-      messageElement.scrollIntoView()
+      messageElement.scrollIntoView();
       setTimeout(() => {
-        messageElement.style.backgroundColor = ""
+        messageElement.style.backgroundColor = "";
       }, 3000);
     }
   }
